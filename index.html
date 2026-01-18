@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIPP PLATINUM - PP At-Taufiiqiyyah Bustanul Maarif</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root { --primary: #0f5132; --accent: #ffc107; --bg: #f4f6f9; }
+        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; }
+        
+        /* Layout */
+        .sidebar { width: 260px; background: var(--primary); color: white; min-height: 100vh; position: fixed; z-index: 1000; transition: 0.3s; }
+        .main-content { margin-left: 260px; padding: 20px; transition: 0.3s; }
+        
+        /* Logo Image Style */
+        .brand-logo { width: 60px; height: 60px; object-fit: contain; margin-bottom: 10px; background: white; border-radius: 50%; padding: 5px; }
+        
+        /* Nav */
+        .nav-link { color: rgba(255,255,255,0.8) !important; padding: 10px 20px; border-radius: 0 25px 25px 0; margin-bottom: 2px; cursor: pointer; }
+        .nav-link:hover, .nav-link.active { background: var(--accent); color: #000 !important; font-weight: bold; }
+        .nav-link i { width: 25px; text-align: center; margin-right: 10px; }
+        
+        /* Components */
+        .card-stat { border: none; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .pass-wrapper { position: relative; }
+        .pass-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666; }
+        
+        /* Table Matrix Grid */
+        .grid-cell { width: 25px; height: 25px; display: inline-block; text-align: center; line-height: 25px; font-size: 12px; margin: 1px; border-radius: 50%; }
+        
+        @media (max-width: 768px) { .sidebar { margin-left: -260px; } .sidebar.active { margin-left: 0; } .main-content { margin-left: 0; } }
+    </style>
+</head>
+<body>
+
+    <div id="page-login" style="position:fixed; top:0; left:0; width:100%; height:100%; background:linear-gradient(135deg, #0f5132, #000); z-index:9999; display:flex; align-items:center; justify-content:center;">
+        <div class="card p-4 text-center shadow-lg" style="width:100%; max-width:380px; border-radius:15px;">
+            <div class="mb-3">
+                <img src="logo.png" alt="Logo" class="brand-logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2000/2000966.png'">
+            </div>
+            <h5 class="fw-bold text-success">SIPP PLATINUM</h5>
+            <small class="text-muted d-block mb-4">Sistem Informasi Pembayaran Pondok</small>
+            <form id="formLogin">
+                <div class="form-floating mb-3 text-start">
+                    <input type="text" class="form-control" id="uName" placeholder="User" required>
+                    <label>Username</label>
+                </div>
+                <div class="form-floating mb-2 text-start pass-wrapper">
+                    <input type="password" class="form-control" id="uPass" placeholder="Pass" required>
+                    <label>Password</label>
+                    <i class="fas fa-eye pass-toggle" onclick="togglePass()"></i>
+                </div>
+                <div class="text-end mb-3">
+                    <a href="#" class="text-decoration-none small text-success" onclick="lupaPass()">Lupa Password?</a>
+                </div>
+                <button type="submit" class="btn btn-success w-100 fw-bold py-2">MASUK APLIKASI</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="main-app" style="display:none;">
+        <div class="sidebar" id="sidebar">
+            <div class="p-4 text-center border-bottom border-white-50">
+                <img src="logo.png" alt="Logo" class="brand-logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2000/2000966.png'">
+                <div class="fw-bold small mt-2">PP AT-TAUFIIQIYYAH<br>BUSTANUL MAARIF</div>
+            </div>
+            <nav class="nav flex-column mt-3">
+                <a class="nav-link active" onclick="nav('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a class="nav-link" onclick="nav('santri')"><i class="fas fa-user-graduate"></i> Data Santri</a>
+                <a class="nav-link" onclick="nav('pembayaran')"><i class="fas fa-cash-register"></i> Pembayaran</a>
+                <a class="nav-link" onclick="nav('laporan')"><i class="fas fa-print"></i> Laporan</a>
+                <a class="nav-link" onclick="nav('pengaturan')"><i class="fas fa-cogs"></i> Pengaturan</a>
+                <a class="nav-link text-warning mt-4" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Keluar</a>
+            </nav>
+        </div>
+
+        <div class="main-content">
+            <button class="btn btn-success d-md-none mb-3" onclick="document.getElementById('sidebar').classList.toggle('active')"><i class="fas fa-bars"></i></button>
+
+            <div id="view-dashboard" class="view-section">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-0">Dashboard Keuangan</h4>
+                        <span class="badge bg-success fs-6 mt-1" id="dashPeriode">...</span>
+                    </div>
+                    <div class="text-end d-none d-md-block">
+                        <h4 id="jam" class="fw-bold text-primary mb-0">00:00</h4>
+                        <small id="tanggal">-</small>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="card card-stat p-3 h-100 border-start border-5 border-primary">
+                            <small class="text-muted fw-bold">TOTAL SANTRI</small>
+                            <h3 class="mt-2" id="dashJml">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-stat p-3 h-100 border-start border-5 border-success">
+                            <small class="text-muted fw-bold">PEMASUKAN BULAN INI</small>
+                            <h4 class="mt-2 text-success" id="dashMasuk">Rp 0</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-stat p-3 h-100 border-start border-5 border-danger">
+                            <small class="text-muted fw-bold">BELUM BAYAR (BLN INI)</small>
+                            <h4 class="mt-2 text-danger" id="dashKurang">0 Santri</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <div class="card card-stat p-3">
+                            <h6 class="fw-bold">Grafik Pemasukan Tahun Ini</h6>
+                            <div style="height: 300px;"><canvas id="chartRevenue"></canvas></div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card card-stat p-3 h-100">
+                            <h6 class="fw-bold border-bottom pb-2">Input Terakhir</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped" style="font-size: 0.8rem;">
+                                    <thead><tr><th>Santri</th><th>Jml</th></tr></thead>
+                                    <tbody id="tblLastInput"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-santri" class="view-section" style="display:none;">
+                <h4 class="fw-bold mb-3">Data Santri</h4>
+                <div class="card card-stat p-3 mb-3">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <input type="text" id="cariSantri" class="form-control form-control-sm" placeholder="Cari nama..." onkeyup="renderSantri()">
+                        </div>
+                        <div class="col-md-2">
+                            <button onclick="modalSantri()" class="btn btn-primary btn-sm w-100"><i class="fas fa-plus"></i> Tambah</button>
+                        </div>
+                        <div class="col-md-2">
+                            <button onclick="document.getElementById('fileExcel').click()" class="btn btn-success btn-sm w-100"><i class="fas fa-file-excel"></i> Import Excel</button>
+                            <input type="file" id="fileExcel" hidden accept=".xlsx, .xls" onchange="importExcel(this)">
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive bg-white rounded p-2 shadow-sm">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead class="table-light"><tr><th>No</th><th>Nama</th><th>L/P</th><th>Kelas</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
+                        <tbody id="tblSantri"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-pembayaran" class="view-section" style="display:none;">
+                <h4 class="fw-bold mb-3">Kasir Pembayaran</h4>
+                <div class="card card-stat p-3 mb-3 bg-light">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-2 fw-bold">Periode Bayar:</div>
+                        <div class="col-md-2">
+                            <select id="payBulan" class="form-select form-select-sm" onchange="renderBayar()"></select>
+                        </div>
+                        <div class="col-md-2"><select id="payTahun" class="form-select form-select-sm" onchange="renderBayar()"></select></div>
+                        <div class="col-md-4"><input type="text" id="cariBayar" class="form-control form-control-sm" placeholder="Cari santri..." onkeyup="renderBayar()"></div>
+                    </div>
+                </div>
+                <div class="table-responsive bg-white rounded p-2 shadow-sm">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead class="table-light"><tr><th>Nama</th><th>Kls</th><th>Status Bulan Ini</th><th>Nominal</th><th class="text-end">Aksi</th></tr></thead>
+                        <tbody id="tblBayar"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="view-laporan" class="view-section" style="display:none;">
+                <h4 class="fw-bold mb-3">Laporan & Rekap</h4>
+                
+                <div class="card card-stat p-3">
+                    <div class="d-flex justify-content-between mb-3 align-items-center">
+                        <div class="d-flex gap-2">
+                            <select id="gridTahun" class="form-select w-auto" onchange="renderGrid()"></select>
+                            <span class="badge bg-success d-flex align-items-center">Lunas</span>
+                            <span class="badge bg-danger d-flex align-items-center">Belum</span>
+                        </div>
+                        <div>
+                            <button onclick="exportExcelRekap()" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Rekap Bulanan</button>
+                            <button onclick="exportPDFTahunan()" class="btn btn-danger btn-sm"><i class="fas fa-file-pdf"></i> Rekap Tahunan</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm text-center" style="font-size:0.8rem" id="tableLaporan">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th rowspan="2" class="align-middle">No</th>
+                                    <th rowspan="2" class="align-middle text-start">Nama Santri</th>
+                                    <th colspan="12">Status Pembayaran (Jan - Des)</th>
+                                    <th rowspan="2" class="align-middle">Aksi</th>
+                                </tr>
+                                <tr>
+                                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th>
+                                    <th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblGrid"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-pengaturan" class="view-section" style="display:none;">
+                <h4 class="fw-bold mb-3">Pengaturan</h4>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card card-stat p-3">
+                            <h6 class="fw-bold border-bottom pb-2">Data Pondok</h6>
+                            <div class="mb-2"><label class="small">Nominal Syahriah (Rp)</label><input type="number" id="confNominal" class="form-control form-control-sm"></div>
+                            <button onclick="saveConf('finance')" class="btn btn-primary btn-sm mt-2">Simpan</button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card card-stat p-3">
+                            <h6 class="fw-bold border-bottom pb-2">Akun Admin</h6>
+                            <div class="input-group input-group-sm mb-2"><span class="input-group-text">User</span><input type="text" id="confUser" class="form-control"></div>
+                            <div class="input-group input-group-sm mb-2"><span class="input-group-text">Pass</span><input type="text" id="confPass" class="form-control"></div>
+                            <button onclick="saveConf('account')" class="btn btn-warning btn-sm">Update Akun</button>
+                            <button onclick="resetData()" class="btn btn-danger btn-sm float-end">Reset Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalRiwayat" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">Riwayat Transaksi Santri</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead><tr><th>Tgl</th><th>Bln/Thn</th><th>Nominal</th></tr></thead>
+                        <tbody id="tblModalRiwayat"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const DB_KEY = 'SIPP_PLATINUM_V2';
+        const defaultDB = {
+            config: { nominal: 100000, user: 'admin', pass: '123' },
+            santri: [],     
+            transaksi: []   
+        };
+        let myChart = null;
+
+        // --- CORE DATABASE ---
+        function getDB() { return JSON.parse(localStorage.getItem(DB_KEY) || JSON.stringify(defaultDB)); }
+        function saveDB(data) { localStorage.setItem(DB_KEY, JSON.stringify(data)); }
+        function formatRp(n) { return new Intl.NumberFormat('id-ID', {style:'currency', currency:'IDR', minimumFractionDigits:0}).format(n); }
+
+        // --- AUTH & INIT ---
+        if(sessionStorage.getItem('login')) showApp();
+        
+        document.getElementById('formLogin').addEventListener('submit', e => {
+            e.preventDefault();
+            const db = getDB();
+            if(document.getElementById('uName').value === db.config.user && document.getElementById('uPass').value === db.config.pass) {
+                sessionStorage.setItem('login', true);
+                showApp();
+            } else {
+                Swal.fire('Login Gagal', 'Username/Password salah', 'error');
+            }
+        });
+
+        // REVISI 4: Fungsi Lupa Password
+        function lupaPass() {
+            Swal.fire({
+                title: 'Lupa Password?',
+                text: 'Silakan hubungi tim IT Pondok untuk reset password manual.',
+                icon: 'info'
+            });
+        }
+
+        function togglePass() {
+            const el = document.getElementById('uPass');
+            el.type = el.type === 'password' ? 'text' : 'password';
+        }
+
+        function logout() { sessionStorage.removeItem('login'); location.reload(); }
+
+        function showApp() {
+            document.getElementById('page-login').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            
+            // Populate Dropdowns
+            const curY = new Date().getFullYear();
+            const years = [curY-1, curY, curY+1];
+            ['payTahun','gridTahun'].forEach(id => {
+                const el = document.getElementById(id);
+                el.innerHTML = '';
+                years.forEach(y => el.innerHTML += `<option value="${y}" ${y===curY?'selected':''}>${y}</option>`);
+            });
+            
+            const blnNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+            const curM = new Date().getMonth();
+            const elBln = document.getElementById('payBulan');
+            elBln.innerHTML = '';
+            blnNames.forEach((b,i) => elBln.innerHTML += `<option value="${i+1}" ${i===curM?'selected':''}>${b}</option>`); // Value 1-12
+
+            nav('dashboard');
+            
+            // Live Clock
+            setInterval(() => {
+                document.getElementById('jam').innerText = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+                document.getElementById('tanggal').innerText = new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'short'});
+            }, 1000);
+        }
+
+        function nav(page) {
+            document.querySelectorAll('.view-section').forEach(e => e.style.display = 'none');
+            document.getElementById('view-'+page).style.display = 'block';
+            document.querySelectorAll('.nav-link').forEach(e => e.classList.remove('active'));
+            event.target.closest('.nav-link')?.classList.add('active'); // Optional chain for direct calls
+            
+            if(page==='dashboard') loadDash();
+            if(page==='santri') renderSantri();
+            if(page==='pembayaran') renderBayar();
+            if(page==='laporan') renderGrid();
+            if(page==='pengaturan') loadConf();
+        }
+
+        // --- DASHBOARD LOGIC ---
+        function loadDash() {
+            const db = getDB();
+            const now = new Date();
+            const curM = now.getMonth() + 1; // 1-12
+            const curY = now.getFullYear();
+            
+            document.getElementById('dashPeriode').innerText = `${curM}/${curY}`;
+            document.getElementById('dashJml').innerText = db.santri.filter(s=>s.status==='aktif').length;
+            
+            // Hitung Pemasukan Bulan Ini
+            let masuk = 0;
+            db.transaksi.forEach(t => {
+                const tDate = new Date(t.date);
+                if(tDate.getMonth()+1 === curM && tDate.getFullYear() === curY) {
+                    masuk += parseInt(t.nominal);
+                }
+            });
+            document.getElementById('dashMasuk').innerText = formatRp(masuk);
+
+            // Hitung Yang Belum Bayar Bulan Ini
+            let belum = 0;
+            db.santri.filter(s=>s.status==='aktif' && !s.isFree).forEach(s => {
+                const isPaid = db.transaksi.some(t => t.idSantri === s.id && parseInt(t.month) === curM && parseInt(t.year) === curY);
+                if(!isPaid) belum++;
+            });
+            document.getElementById('dashKurang').innerText = belum + " Santri";
+
+            // REVISI 5: Tampilan Input Terakhir
+            const tbody = document.getElementById('tblLastInput');
+            tbody.innerHTML = '';
+            // Sort by Date Descending, ambil 5
+            const lastTrx = [...db.transaksi].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+            
+            lastTrx.forEach(t => {
+                const s = db.santri.find(x => x.id === t.idSantri);
+                const nama = s ? s.nama : 'Unknown';
+                tbody.innerHTML += `<tr><td>${nama}<br><small class="text-muted">${new Date(t.date).toLocaleDateString()}</small></td><td class="text-end text-success">${formatRp(t.nominal)}</td></tr>`;
+            });
+
+            // Chart
+            const ctx = document.getElementById('chartRevenue').getContext('2d');
+            const dataChart = new Array(12).fill(0);
+            db.transaksi.forEach(t => {
+                const tDate = new Date(t.date);
+                if(tDate.getFullYear() === curY) dataChart[tDate.getMonth()] += parseInt(t.nominal);
+            });
+
+            if(myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'],
+                    datasets: [{ label: 'Pemasukan (Rp)', data: dataChart, backgroundColor: '#0f5132' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // --- SANTRI LOGIC ---
+        function renderSantri() {
+            const db = getDB();
+            const key = document.getElementById('cariSantri').value.toLowerCase();
+            const tbody = document.getElementById('tblSantri');
+            tbody.innerHTML = '';
+            
+            const list = db.santri.filter(s => s.status === 'aktif' && s.nama.toLowerCase().includes(key));
+            
+            list.forEach((s, i) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${i+1}</td>
+                        <td class="fw-bold">${s.nama}</td>
+                        <td>${s.gender}</td>
+                        <td>${s.kelas}</td>
+                        <td>${s.isFree ? '<span class="badge bg-secondary">Bebas</span>' : '<span class="badge bg-success">Wajib</span>'}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-warning" onclick="modalSantri(${s.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="delSantri(${s.id})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        function modalSantri(id=null) {
+            const db = getDB();
+            let s = {nama:'', gender:'L', kelas:'', isFree:false};
+            if(id) s = db.santri.find(x => x.id === id);
+
+            Swal.fire({
+                title: id ? 'Edit Santri' : 'Tambah Santri',
+                html: `
+                    <input id="swal-nama" class="swal2-input" placeholder="Nama Lengkap" value="${s.nama}">
+                    <select id="swal-gen" class="swal2-input"><option value="L" ${s.gender=='L'?'selected':''}>Laki-laki</option><option value="P" ${s.gender=='P'?'selected':''}>Perempuan</option></select>
+                    <input id="swal-cls" class="swal2-input" placeholder="Kelas" value="${s.kelas}">
+                    <div class="mt-3 text-start px-5"><input type="checkbox" id="swal-free" ${s.isFree?'checked':''}> <label for="swal-free">Bebas Pembayaran</label></div>
+                `,
+                confirmButtonText: 'Simpan',
+                preConfirm: () => {
+                    return {
+                        nama: document.getElementById('swal-nama').value,
+                        gender: document.getElementById('swal-gen').value,
+                        kelas: document.getElementById('swal-cls').value,
+                        isFree: document.getElementById('swal-free').checked
+                    }
+                }
+            }).then((res) => {
+                if(res.isConfirmed) {
+                    const data = res.value;
+                    if(!data.nama) return;
+                    
+                    if(id) {
+                        const idx = db.santri.findIndex(x => x.id === id);
+                        db.santri[idx] = { ...db.santri[idx], ...data };
+                    } else {
+                        data.id = Date.now();
+                        data.status = 'aktif';
+                        db.santri.push(data);
+                    }
+                    saveDB(db);
+                    renderSantri();
+                    Swal.fire('Tersimpan', '', 'success');
+                }
+            });
+        }
+
+        function delSantri(id) {
+            Swal.fire({
+                title: 'Hapus Santri?', text: "Data tidak bisa dikembalikan!", icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const db = getDB();
+                    const idx = db.santri.findIndex(x => x.id === id);
+                    db.santri.splice(idx, 1);
+                    // Hapus juga transaksinya
+                    db.transaksi = db.transaksi.filter(t => t.idSantri !== id);
+                    saveDB(db);
+                    renderSantri();
+                    Swal.fire('Terhapus!', '', 'success');
+                }
+            });
+        }
+
+        // REVISI 2: Import Excel dengan Notifikasi
+        function importExcel(input) {
+            const file = input.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    const db = getDB();
+                    let count = 0;
+                    json.forEach(row => {
+                        // Asumsi kolom Excel: Nama, Gender, Kelas
+                        if(row.Nama) {
+                            db.santri.push({
+                                id: Date.now() + Math.floor(Math.random()*1000),
+                                nama: row.Nama,
+                                gender: row.Gender || 'L',
+                                kelas: row.Kelas || 'Baru',
+                                status: 'aktif',
+                                isFree: false
+                            });
+                            count++;
+                        }
+                    });
+                    saveDB(db);
+                    renderSantri();
+                    // Notifikasi Sukses
+                    Swal.fire('Import Berhasil!', `${count} data santri berhasil ditambahkan.`, 'success');
+                } catch(err) {
+                    Swal.fire('Import Gagal', 'Format file salah atau rusak.', 'error');
+                    console.error(err);
+                }
+                input.value = ''; // Reset input
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- PEMBAYARAN LOGIC ---
+        function renderBayar() {
+            const db = getDB();
+            const bln = document.getElementById('payBulan').value;
+            const thn = document.getElementById('payTahun').value;
+            const key = document.getElementById('cariBayar').value.toLowerCase();
+            const tbody = document.getElementById('tblBayar');
+            tbody.innerHTML = '';
+            
+            const list = db.santri.filter(s => s.status === 'aktif' && s.nama.toLowerCase().includes(key));
+            
+            list.forEach(s => {
+                // Cek apakah sudah bayar di bulan & tahun ini
+                const trx = db.transaksi.find(t => t.idSantri === s.id && parseInt(t.month) == bln && parseInt(t.year) == thn);
+                const isLunas = !!trx;
+                const statusHtml = s.isFree 
+                    ? '<span class="badge bg-secondary">Bebas</span>' 
+                    : (isLunas ? '<span class="badge bg-success">Lunas</span>' : '<span class="badge bg-danger">Belum</span>');
+                
+                const btnAction = s.isFree || isLunas 
+                    ? `<button class="btn btn-sm btn-secondary" disabled><i class="fas fa-check"></i></button>`
+                    : `<button class="btn btn-sm btn-primary" onclick="bayar(${s.id}, '${s.nama}')">Bayar</button>`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">${s.nama}</td>
+                        <td>${s.kelas}</td>
+                        <td>${statusHtml}</td>
+                        <td>${isLunas ? formatRp(trx.nominal) : formatRp(db.config.nominal)}</td>
+                        <td class="text-end">${btnAction}</td>
+                    </tr>`;
+            });
+        }
+
+        function bayar(id, nama) {
+            const db = getDB();
+            const bln = document.getElementById('payBulan').value;
+            const thn = document.getElementById('payTahun').value;
+            const nominal = db.config.nominal;
+
+            Swal.fire({
+                title: 'Konfirmasi Pembayaran',
+                text: `Bayar SPP ${nama} untuk bulan ${bln}/${thn} senilai ${formatRp(nominal)}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Bayar'
+            }).then((res) => {
+                if(res.isConfirmed) {
+                    const trx = {
+                        idTrx: Date.now(),
+                        idSantri: id,
+                        month: bln,
+                        year: thn,
+                        date: new Date().toISOString(), // Untuk riwayat harian
+                        nominal: nominal,
+                        petugas: db.config.user
+                    };
+                    db.transaksi.push(trx);
+                    saveDB(db);
+                    renderBayar();
+                    Swal.fire('Berhasil', 'Pembayaran tersimpan', 'success');
+                }
+            });
+        }
+
+        // --- REVISI 3: LAPORAN MATRIX & LOGIC ---
+        function renderGrid() {
+            const db = getDB();
+            const thn = document.getElementById('gridTahun').value;
+            const tbody = document.getElementById('tblGrid');
+            tbody.innerHTML = '';
+
+            const list = db.santri.filter(s => s.status === 'aktif').sort((a,b) => a.kelas.localeCompare(b.kelas));
+
+            let no = 1;
+            list.forEach(s => {
+                let rowHtml = `<tr>
+                    <td>${no++}</td>
+                    <td class="text-start">${s.nama} <small class="text-muted">(${s.kelas})</small></td>`;
+                
+                // Loop Bulan 1-12
+                for(let i=1; i<=12; i++) {
+                    if(s.isFree) {
+                        rowHtml += `<td><span class="fas fa-minus text-secondary"></span></td>`;
+                    } else {
+                        // Cek bayar
+                        const isPaid = db.transaksi.some(t => t.idSantri === s.id && parseInt(t.month) == i && parseInt(t.year) == thn);
+                        rowHtml += `<td>${isPaid ? '<i class="fas fa-check text-success"></i>' : '<span class="text-danger">x</span>'}</td>`;
+                    }
+                }
+                
+                // REVISI 3: Tombol Aksi di Laporan (Lihat & Unduh)
+                rowHtml += `<td>
+                    <button class="btn btn-info btn-sm px-2" onclick="lihatRiwayat(${s.id})" title="Riwayat"><i class="fas fa-history"></i></button>
+                    <button class="btn btn-secondary btn-sm px-2" onclick="cetakKartu(${s.id})" title="Unduh Kartu"><i class="fas fa-download"></i></button>
+                </td></tr>`;
+                
+                tbody.innerHTML += rowHtml;
+            });
+        }
+
+        function lihatRiwayat(idSantri) {
+            const db = getDB();
+            const s = db.santri.find(x => x.id === idSantri);
+            const trxs = db.transaksi.filter(t => t.idSantri === idSantri).sort((a,b) => new Date(b.date) - new Date(a.date));
+            
+            const tbody = document.getElementById('tblModalRiwayat');
+            tbody.innerHTML = '';
+            
+            if(trxs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center">Belum ada data transaksi.</td></tr>';
+            } else {
+                trxs.forEach(t => {
+                    tbody.innerHTML += `<tr>
+                        <td>${new Date(t.date).toLocaleDateString()}</td>
+                        <td>${t.month}/${t.year}</td>
+                        <td>${formatRp(t.nominal)}</td>
+                    </tr>`;
+                });
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalRiwayat'));
+            modal.show();
+        }
+
+        // --- EXPORT FUNCTIONS ---
+        function exportExcelRekap() {
+            const table = document.getElementById("tableLaporan");
+            const wb = XLSX.utils.table_to_book(table, {sheet: "Rekap"});
+            XLSX.writeFile(wb, "Rekap_SPP_" + document.getElementById('gridTahun').value + ".xlsx");
+        }
+
+        function exportPDFTahunan() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4'); // Landscape
+            
+            doc.text("Laporan Pembayaran SPP Tahun " + document.getElementById('gridTahun').value, 14, 15);
+            
+            doc.autoTable({ 
+                html: '#tableLaporan',
+                startY: 20,
+                theme: 'grid',
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [15, 81, 50] } // Hijau
+            });
+            
+            doc.save("Rekap_SPP_Tahunan.pdf");
+        }
+
+        function cetakKartu(id) {
+            Swal.fire('Info', 'Fitur unduh kartu per santri sedang disiapkan (Simulasi: Download dimulai...)', 'success');
+        }
+
+        // --- PENGATURAN ---
+        function loadConf() {
+            const db = getDB();
+            document.getElementById('confNominal').value = db.config.nominal;
+            document.getElementById('confUser').value = db.config.user;
+            document.getElementById('confPass').value = db.config.pass;
+        }
+
+        function saveConf(type) {
+            const db = getDB();
+            if(type === 'finance') {
+                db.config.nominal = parseInt(document.getElementById('confNominal').value);
+            } else {
+                db.config.user = document.getElementById('confUser').value;
+                db.config.pass = document.getElementById('confPass').value;
+            }
+            saveDB(db);
+            Swal.fire('Tersimpan', '', 'success');
+        }
+
+        function resetData() {
+            Swal.fire({
+                title: 'Reset Semua Data?', text: "Semua santri dan transaksi akan dihapus!", icon: 'warning', showCancelButton: true
+            }).then(r => {
+                if(r.isConfirmed) {
+                    localStorage.removeItem(DB_KEY);
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
